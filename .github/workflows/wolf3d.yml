@@ -47,8 +47,14 @@ jobs:
           fetch-depth: 0
       - name: Install CSFML
         run: apt-get update -qq && apt-get install -y libcsfml-dev
-      - name: Compile the project
-        run: make
+      - name: Compile the project (without intro)
+        run: |
+          # Create a temporary Makefile without intro/outro
+          grep -v "intro\|outro" Makefile > Makefile.tmp
+          # Update the 'all' target to not depend on intro/outro
+          sed -i 's/all: intro \$(NAME) outro/all: \$(NAME)/' Makefile.tmp
+          # Use the modified Makefile
+          make -f Makefile.tmp
         timeout-minutes: 2
       - name: Check wolf3d executable
         run: |
@@ -57,7 +63,11 @@ jobs:
             exit 1
           fi
       - name: Clean the project
-        run: make clean
+        run: |
+          # Use the same approach for clean
+          grep -v "intro\|outro" Makefile > Makefile.tmp
+          sed -i 's/all: intro \$(NAME) outro/all: \$(NAME)/' Makefile.tmp
+          make -f Makefile.tmp clean
 
   run_tests:
     needs: check_program_compilation
@@ -72,5 +82,9 @@ jobs:
       - name: Install CSFML
         run: apt-get update -qq && apt-get install -y libcsfml-dev
       - name: Run tests
-        run: make tests_run
+        run: |
+          # Create a temporary Makefile without intro/outro for tests
+          grep -v "intro\|outro" Makefile > Makefile.tmp
+          sed -i 's/all: intro \$(NAME) outro/all: \$(NAME)/' Makefile.tmp
+          make -f Makefile.tmp tests_run
         timeout-minutes: 2
