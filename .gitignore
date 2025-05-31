@@ -1,0 +1,17 @@
+# Fichiers compilés
+*.o
+wolf3d
+a.out
+
+# Fichiers temporaires
+*~
+vgcore*
+
+# Fichiers de coverage
+*.gcda
+*.gcno
+*.gcov
+
+# IDE
+.vscode/
+.idea/
