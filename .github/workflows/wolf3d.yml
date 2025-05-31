@@ -1,0 +1,76 @@
+name: Wolf3D
+
+on:
+  push:
+    branches-ignore:
+      - 'ga-ignore-*'
+  pull_request:
+    branches-ignore:
+      - 'ga-ignore-*'
+
+jobs:
+  check_coding_style:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/epitech/coding-style-checker:latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run coding style checker
+        run: check.sh $(pwd) $(pwd)
+      - name: Display coding style errors
+        if: failure()
+        shell: bash
+        run: |
+          if [ -f coding-style-reports.log ]; then
+            while IFS= read -r string; do
+              file="$(echo "$string" | cut -d':' -f1)"
+              line="$(echo "$string" | cut -d':' -f2)"
+              type="$(echo "$string" | cut -d':' -f3)"
+              code="$(echo "$string" | cut -d':' -f4)"
+              echo "::error file=$file,line=$line::$type coding style error: $code"
+            done < coding-style-reports.log
+            exit 1
+          fi
+
+  check_program_compilation:
+    needs: check_coding_style
+    runs-on: ubuntu-latest
+    container:
+      image: epitechcontent/epitest-docker:latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install CSFML
+        run: apt-get update -qq && apt-get install -y libcsfml-dev
+      - name: Compile the project
+        run: make
+        timeout-minutes: 2
+      - name: Check wolf3d executable
+        run: |
+          if [ ! -x "wolf3d" ]; then
+            echo "::error::wolf3d binary not found or not executable"
+            exit 1
+          fi
+      - name: Clean the project
+        run: make clean
+
+  run_tests:
+    needs: check_program_compilation
+    runs-on: ubuntu-latest
+    container:
+      image: epitechcontent/epitest-docker:latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install CSFML
+        run: apt-get update -qq && apt-get install -y libcsfml-dev
+      - name: Run tests
+        run: make tests_run
+        timeout-minutes: 2
